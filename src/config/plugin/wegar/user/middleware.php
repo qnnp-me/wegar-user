@@ -1,6 +1,6 @@
 <?php
 
-use plugin\user\app\middleware\UserMiddleware;
+use Wegar\User\middleware\UserMiddleware;
 
 return [
   '@' => [

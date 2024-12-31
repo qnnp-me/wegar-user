@@ -1,7 +1,8 @@
 <?php
 
-namespace plugin\user\app\api\controller;
+namespace plugin\WegarUser\app\api\controller;
 
+use plugin\email\api\Email;
 use plugin\sms\api\Sms;
 use support\annotation\DisableDefaultRoute;
 use support\Cache;
@@ -61,8 +62,11 @@ class BasicController
     if (time() - ss()->lastRequestTimeGet() < 2) {
       throw new BusinessException('请求过于频繁，请稍后再试');
     }
-    $captcha = rand(1000, 9999);
-    $cache_key = 'captcha_' . $phone . '_' . $email;
+    $len = config('plugin.WegarUser.captcha.email_template', 4);
+    $min = pow(10, $len - 1);
+    $max = pow(10, $len) - 1;
+    $captcha = rand($min, $max);
+    $cache_key = 'captcha_' . ($phone ?: $email);
     $last_data = Cache::get($cache_key, [
       'code' => '',
       'time' => 0,
@@ -70,10 +74,21 @@ class BasicController
     if (time() - $last_data['time'] < 60) {
       throw new BusinessException('请求过于频繁，请稍后再试');
     }
-    if ($phone){
-      Sms::sendByTag($phone, 'login', [
+    if ($phone) {
+      Sms::sendByTag($phone, config('plugin.WegarUser.captcha.sms_tag'), [
         'code' => $captcha,
       ]);
+    } elseif ($email) {
+      Email::sendByTemplate($email, config('plugin.WegarUser.captcha.email_template'), [
+        'code' => $captcha,
+      ]);
+    } else {
+      return json_error('参数错误');
     }
+    Cache::set($cache_key, [
+      'code' => $captcha,
+      'time' => time(),
+    ], 5 * 60);
+    return json_success();
   }
 }

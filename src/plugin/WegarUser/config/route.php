@@ -1,6 +1,6 @@
 <?php
 
-use plugin\user\app\api\controller\BasicController;
+use plugin\WegarUser\app\api\controller\BasicController;
 use Webman\Route;
 
 Route::post('/app/user/api/login', [BasicController::class, 'login']);

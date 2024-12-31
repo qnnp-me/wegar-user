@@ -23,7 +23,7 @@ class ReleaseFiles extends InitAbstract
         $command_helper->notice("Releasing files...");
         $phar = new Phar($phar);
         $extract_list = [
-          'vendor/wegar/user/src/database' => $target_dir
+          'vendor/wegar/user/src/database/' => $target_dir
         ];
         foreach ($extract_list as $from => $to) {
           $phar->extractTo($to, $from, true);

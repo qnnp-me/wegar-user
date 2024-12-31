@@ -1,6 +1,6 @@
 <?php
 
-namespace plugin\user\app\middleware;
+namespace Wegar\User\middleware;
 
 use Webman\Http\Request;
 use Webman\Http\Response;
