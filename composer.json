@@ -6,7 +6,10 @@
   "require": {
     "php": ">=8.1",
     "illuminate/database": "^11.36",
+    "overtrue/easy-sms": "^3.0",
+    "phpmailer/phpmailer": "^6.9",
     "robmorgan/phinx": "^0.16",
+    "webman/rate-limiter": "^1.1",
     "wegar/basic": "^1.0",
     "workerman/webman-framework": "^1.6.11"
   },

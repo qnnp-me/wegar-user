@@ -18,11 +18,6 @@ use Wegar\User\module\object\UserReadableObject;
 
 class UserModule
 {
-  private static function ss(): SessionHelper
-  {
-    return SessionHelper::getInstance();
-  }
-
   static function createUser(UserIdentifierTypeEnum $type, string $identifier): UserModel
   {
     $user_identifier = UserIdentifierModel::where('type', $type->value)->where('identifier', $identifier)->first();
@@ -101,26 +96,26 @@ class UserModule
    */
   static function getCurrentUser(): null|object
   {
-    return self::ss()->userGet();
+    return ss()->userGet();
   }
 
   static function loginUserByIdentifier(string $identifier): void
   {
     $user = self::getUserByIdentifier($identifier);
     $user_info = self::toReadable($user);
-    self::ss()->userSet($user_info);
+    ss()->userSet($user_info);
   }
 
   static function loginUserById(int $id): void
   {
     $user = self::getUserById($id);
     $user_info = self::toReadable($user);
-    self::ss()->userSet($user_info);
+    ss()->userSet($user_info);
   }
 
   static function logoutUser(): void
   {
-    self::ss()->userSet(null);
+    ss()->userSet(null);
   }
 
   static function setMeta(string $name, mixed $value, int $user_id = null)

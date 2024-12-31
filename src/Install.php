@@ -8,6 +8,7 @@ class Install
 
   protected static array $pathRelation = [
     'config/plugin/wegar/user' => 'config/plugin/wegar/user',
+    'plugin/user'              => 'plugin/user',
   ];
 
   public static function install(): void
