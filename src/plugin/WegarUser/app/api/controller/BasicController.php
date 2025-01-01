@@ -18,12 +18,24 @@ use Wegar\User\module\UserModule;
 class BasicController
 {
   #[RateLimiter(limit: 1, ttl: 2, message: '请求过于频繁，请稍后再试')]
-  function login(string $identifier, string $password): Response
+  function login(string $identifier, string $password = '', string $code = ''): Response
   {
     $user = UserModule::getUserByIdentifier($identifier);
-    $password_verified = $user->verifyPassword($password);
-    if (!$password_verified) {
-      throw new BusinessException('密码错误');
+    if ($password) {
+      $password_verified = $user->verifyPassword($password);
+      if (!$password_verified) {
+        throw new BusinessException('密码错误');
+      }
+    } elseif ($code) {
+      $captcha = Cache::get('captcha_' . $identifier, [
+        'code' => '',
+        'time' => 0,
+      ]);
+      if ($captcha['code'] !== $code) {
+        throw new BusinessException('验证码错误');
+      }
+    } else {
+      throw new BusinessException('参数错误');
     }
     if ($user->status !== UserModel::STATUS_NORMAL) {
       throw new BusinessException('用户状态异常: ' . $user->status);
@@ -56,13 +68,12 @@ class BasicController
     return json_success();
   }
 
-  #[RateLimiter(limit: 2, ttl: 60, message: '请求过于频繁，请稍后再试')]
   function captcha(Request $request, string $phone = '', string $email = ''): Response
   {
-    if (time() - ss()->lastRequestTimeGet() < 2) {
+    if (time() - ss()->lastRequestTimeGet() < config('plugin.WegarUser.captcha.delay', 2)) {
       throw new BusinessException('请求过于频繁，请稍后再试');
     }
-    $len = config('plugin.wegar.user.captcha.email_template', 4);
+    $len = config('plugin.WegarUser.captcha.email_template', 4);
     $min = pow(10, $len - 1);
     $max = pow(10, $len) - 1;
     $captcha = rand($min, $max);
@@ -75,11 +86,11 @@ class BasicController
       throw new BusinessException('请求过于频繁，请稍后再试');
     }
     if ($phone) {
-      Sms::sendByTag($phone, config('plugin.wegar.user.captcha.sms_tag'), [
+      Sms::sendByTag($phone, config('plugin.WegarUser.captcha.sms_tag'), [
         'code' => $captcha,
       ]);
     } elseif ($email) {
-      Email::sendByTemplate($email, config('plugin.wegar.user.captcha.email_template'), [
+      Email::sendByTemplate($email, config('plugin.WegarUser.captcha.email_template'), [
         'code' => $captcha,
       ]);
     } else {

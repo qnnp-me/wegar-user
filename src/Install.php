@@ -7,8 +7,7 @@ class Install
   const WEBMAN_PLUGIN = true;
 
   protected static array $pathRelation = [
-    'config/plugin/wegar/user' => 'config/plugin/wegar/user',
-    'plugin/user'              => 'plugin/user',
+    'plugin/WegarUser'              => 'plugin/WegarUser',
   ];
 
   public static function install(): void

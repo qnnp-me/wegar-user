@@ -1,7 +1,7 @@
 <?php
 
 $basic_dir = __DIR__;
-$connection = config('plugin.wegar.user.database.connection');
+$connection = config('plugin.WegarUser.database.connection');
 return [
   "paths"        => [
     "migrations" => is_phar()
@@ -25,7 +25,7 @@ return [
     "default_migration_table" => "phinxlog",
     "default_environment"     => "default",
     "default"                 => [
-      "adapter"   => config('plugin.wegar.user.database.adapter'),
+      "adapter"   => config('plugin.WegarUser.database.adapter'),
       "host"      => config("database.connections.$connection.host"),
       "name"      => config("database.connections.$connection.database"),
       "user"      => config("database.connections.$connection.username"),
