@@ -6,7 +6,6 @@ use Exception;
 use stdClass;
 use support\exception\BusinessException;
 use support\Log;
-use Wegar\Basic\helper\SessionHelper;
 use Wegar\User\model\enum\UserIdentifierTypeEnum;
 use Wegar\User\model\enum\UserLogLevelEnum;
 use Wegar\User\model\UserIdentifierModel;

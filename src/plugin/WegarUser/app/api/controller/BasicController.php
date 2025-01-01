@@ -62,7 +62,7 @@ class BasicController
     if (time() - ss()->lastRequestTimeGet() < 2) {
       throw new BusinessException('请求过于频繁，请稍后再试');
     }
-    $len = config('plugin.WegarUser.captcha.email_template', 4);
+    $len = config('plugin.wegar.user.captcha.email_template', 4);
     $min = pow(10, $len - 1);
     $max = pow(10, $len) - 1;
     $captcha = rand($min, $max);
@@ -75,11 +75,11 @@ class BasicController
       throw new BusinessException('请求过于频繁，请稍后再试');
     }
     if ($phone) {
-      Sms::sendByTag($phone, config('plugin.WegarUser.captcha.sms_tag'), [
+      Sms::sendByTag($phone, config('plugin.wegar.user.captcha.sms_tag'), [
         'code' => $captcha,
       ]);
     } elseif ($email) {
-      Email::sendByTemplate($email, config('plugin.WegarUser.captcha.email_template'), [
+      Email::sendByTemplate($email, config('plugin.wegar.user.captcha.email_template'), [
         'code' => $captcha,
       ]);
     } else {
