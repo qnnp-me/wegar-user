@@ -10,6 +10,7 @@ use support\exception\BusinessException;
 use support\Request;
 use support\Response;
 use Webman\RateLimiter\Annotation\RateLimiter;
+use Wegar\User\model\enum\UserIdentifierTypeEnum;
 use Wegar\User\model\enum\UserLogLevelEnum;
 use Wegar\User\model\UserModel;
 use Wegar\User\module\UserModule;
@@ -23,17 +24,17 @@ class BasicController
     $user = UserModule::getUserByIdentifier($identifier);
     $userinfo = UserModule::toReadable($user);
     if ($password) {
+      if (!$user){
+        throw new BusinessException('用户不存在');
+      }
+      UserModule::log('system', UserLogLevelEnum::INFO, '用户登录', [
+        'ip' => request()->getRealIp(false),
+      ], $user->id);
       $password_verified = $user->verifyPassword($password);
       if (!$password_verified) {
         throw new BusinessException('密码错误');
       }
     } elseif ($code) {
-      if (!isset($userinfo->phone) && !isset($userinfo->email)) {
-        if ($create){
-        }else{
-          throw new BusinessException('用户不存在');
-        }
-      }
       $captcha = Cache::get('captcha_' . $identifier, [
         'code' => '',
         'time' => 0,
@@ -41,9 +42,28 @@ class BasicController
       if ($captcha['code'] !== $code) {
         throw new BusinessException('验证码错误');
       }
+      if (!isset($userinfo->phone) && !isset($userinfo->email)) {
+        if ($create) {
+          $user = UserModule::createUser(UserIdentifierTypeEnum::PHONE, $identifier);
+          $userinfo = UserModule::toReadable($user);
+          UserModule::log('system', UserLogLevelEnum::INFO, '用户创建', [
+            'ip' => request()->getRealIp(false),
+          ], $user->id);
+        } else {
+          throw new BusinessException('用户不存在');
+        }
+      }
     } elseif ($sign) {
       if (!isset($userinfo->device_id)) {
-        throw new BusinessException('用户不存在');
+        if ($create) {
+          $user = UserModule::createUser(UserIdentifierTypeEnum::PHONE, $identifier);
+          $userinfo = UserModule::toReadable($user);
+          UserModule::log('system', UserLogLevelEnum::INFO, '用户创建', [
+            'ip' => request()->getRealIp(false),
+          ], $user->id);
+        } else {
+          throw new BusinessException('用户不存在');
+        }
       }
       $key = config('plugin.WegarUser.captcha.device_key');
       $header_keys = config('plugin.WegarUser.captcha.device_headers');
