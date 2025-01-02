@@ -18,21 +18,43 @@ use Wegar\User\module\UserModule;
 class BasicController
 {
   #[RateLimiter(limit: 1, ttl: 2, message: '请求过于频繁，请稍后再试')]
-  function login(string $identifier, string $password = '', string $code = ''): Response
+  function login(string $identifier, string $password = '', string $code = '', string $sign = '', bool $create = false): Response
   {
     $user = UserModule::getUserByIdentifier($identifier);
+    $userinfo = UserModule::toReadable($user);
     if ($password) {
       $password_verified = $user->verifyPassword($password);
       if (!$password_verified) {
         throw new BusinessException('密码错误');
       }
     } elseif ($code) {
+      if (!isset($userinfo->phone) && !isset($userinfo->email)) {
+        if ($create){
+        }else{
+          throw new BusinessException('用户不存在');
+        }
+      }
       $captcha = Cache::get('captcha_' . $identifier, [
         'code' => '',
         'time' => 0,
       ]);
       if ($captcha['code'] !== $code) {
         throw new BusinessException('验证码错误');
+      }
+    } elseif ($sign) {
+      if (!isset($userinfo->device_id)) {
+        throw new BusinessException('用户不存在');
+      }
+      $key = config('plugin.WegarUser.captcha.device_key');
+      $header_keys = config('plugin.WegarUser.captcha.device_headers');
+      sort($header_keys);
+      $headers = '';
+      foreach ($header_keys as $header_key) {
+        $headers .= strtolower($header_key) . ':' . request()->header($header_key) . ',';
+      }
+      $device_sign_verified = md5($key . ',' . $headers . $identifier) === $sign;
+      if (!$device_sign_verified) {
+        throw new BusinessException('设备签名错误');
       }
     } else {
       throw new BusinessException('参数错误');

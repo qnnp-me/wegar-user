@@ -15,7 +15,9 @@
   },
   "autoload": {
     "psr-4": {
-      "Wegar\\User\\": "src"
+      "\\": "src/database",
+      "Wegar\\User\\": "src",
+      "plugin\\WegarUser\\": "src/plugin/WegarUser"
     }
   }
 }

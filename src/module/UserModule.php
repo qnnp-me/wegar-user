@@ -44,11 +44,14 @@ class UserModule
   }
 
   /**
-   * @param UserModel $user
-   * @return UserReadableObject
+   * @param UserModel|null $user
+   * @return UserReadableObject|null
    */
-  static function toReadable(UserModel $user): object
+  static function toReadable(?UserModel $user): ?object
   {
+    if (!$user) {
+      return null;
+    }
     $user_info = [];
     $user_info['id'] = $user->id;
     foreach ($user->identifiers as $identifier) {
