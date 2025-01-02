@@ -96,7 +96,7 @@ class UserModule
   /**
    * @return UserReadableObject|null
    */
-  static function getCurrentUser(): null|object
+  static function getCurrentUser(): ?object
   {
     return ss()->userGet();
   }

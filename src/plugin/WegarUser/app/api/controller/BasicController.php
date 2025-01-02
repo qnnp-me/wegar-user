@@ -12,6 +12,7 @@ use support\Response;
 use Webman\Captcha\CaptchaBuilder;
 use Webman\Captcha\PhraseBuilder;
 use Webman\RateLimiter\Annotation\RateLimiter;
+use Webman\RateLimiter\Limiter;
 use Wegar\User\model\enum\UserIdentifierTypeEnum;
 use Wegar\User\model\enum\UserLogLevelEnum;
 use Wegar\User\model\UserModel;
@@ -41,17 +42,15 @@ class BasicController
         throw new BusinessException('密码错误');
       }
     } elseif ($code) {
-      $captcha = Cache::get('captcha_' . preg_replace("#[^0-9a-zA-Z\-_.]#", "_", $identifier), [
-        'code' => '',
-        'time' => 0,
-      ]);
-      if ($captcha['code'] !== $code) {
+      $cache_key = 'wegar-user-code-' . preg_replace("#[^0-9a-zA-Z\-_.]#", "_", $identifier ?: '');
+      $last_code = Cache::get($cache_key, '');
+      if ($last_code !== $code) {
         throw new BusinessException('验证码错误');
       }
+      Cache::delete($cache_key);
       if (!isset($userinfo->phone) && !isset($userinfo->email)) {
         if ($create) {
           $user = UserModule::createUser(UserIdentifierTypeEnum::PHONE, $identifier);
-          $userinfo = UserModule::toReadable($user);
           UserModule::log('system', UserLogLevelEnum::INFO, '用户创建', [
             'ip' => request()->getRealIp(false),
           ], $user->id);
@@ -63,7 +62,6 @@ class BasicController
       if (!isset($userinfo->device_id)) {
         if ($create) {
           $user = UserModule::createUser(UserIdentifierTypeEnum::PHONE, $identifier);
-          $userinfo = UserModule::toReadable($user);
           UserModule::log('system', UserLogLevelEnum::INFO, '用户创建', [
             'ip' => request()->getRealIp(false),
           ], $user->id);
@@ -115,34 +113,35 @@ class BasicController
     return json_success(UserModule::logoutUser());
   }
 
+  #[RateLimiter(limit: 10, ttl: 60, message: '请求过于频繁，请稍后再试')]
   function captcha(Request $request, string $phone = '', string $email = '', $width = 150, $height = 40): Response
   {
-    if (
-      ($phone || $email) &&
-      (time() - ss()->lastRequestTimeGet() < config('plugin.WegarUser.captcha.delay', 2))
-    ) {
-      throw new BusinessException('请求过于频繁，请稍后再试');
-    }
-    $len = config('plugin.WegarUser.captcha.length', 4);
-    $min = pow(10, $len - 1);
-    $max = pow(10, $len) - 1;
-    $captcha = rand($min, $max);
-    $cache_key = 'captcha_' . preg_replace("#[^0-9a-zA-Z\-_.]#", "_", $phone ?: $email ?: '');
-    $last_data = Cache::get($cache_key, [
-      'code' => '',
-      'time' => 0,
-    ]);
-    if (time() - $last_data['time'] < 60) {
-      throw new BusinessException('请求过于频繁，请稍后再试');
-    }
-    if ($phone) {
-      Sms::sendByTag($phone, config('plugin.WegarUser.captcha.sms_tag'), [
-        'code' => $captcha,
-      ]);
-    } elseif ($email) {
-      Email::sendByTemplate($email, config('plugin.WegarUser.captcha.email_template'), [
-        'code' => $captcha,
-      ]);
+    if ($phone || $email) {
+      if (time() - ss()->lastRequestTimeGet() < config('plugin.WegarUser.captcha.delay', 2)) {
+        throw new BusinessException('请求过于频繁，请稍后再试');
+      }
+
+      $minutely_limit = config('plugin.WegarUser.captcha.minutely', 1);
+      $daily_limit = config('plugin.WegarUser.captcha.daily', 10);
+      Limiter::check(key: "wegar-user-captcha-minutely-" . ($phone ?: $email), limit: $minutely_limit, ttl: 60, message: "每分钟限制1次");
+      Limiter::check(key: "wegar-user-captcha-daily-" . ($phone ?: $email), limit: $daily_limit, ttl: 60 * 60 * 24, message: "每个" . ($phone ? '手机' : '邮箱') . "每日限制" . $daily_limit . "次");
+
+      $len = config('plugin.WegarUser.captcha.length', 4);
+      $min = pow(10, $len - 1);
+      $max = pow(10, $len) - 1;
+      $code = rand($min, $max);
+      $cache_key = 'wegar-user-code-' . preg_replace("#[^0-9a-zA-Z\-_.]#", "_", $phone ?: $email ?: '');
+      if ($phone) {
+        Sms::sendByTag($phone, config('plugin.WegarUser.captcha.sms_tag'), [
+          'code' => $code,
+        ]);
+      } else {
+        Email::sendByTemplate($email, config('plugin.WegarUser.captcha.email_template'), [
+          'code' => $code,
+        ]);
+      }
+      Cache::set($cache_key, $code, 5 * 60);
+      return json_success();
     } else {
       $builder = new PhraseBuilder(4, 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ');
       $captcha = new CaptchaBuilder(null, $builder);
@@ -151,10 +150,5 @@ class BasicController
       $img_content = $captcha->get();
       return response($img_content, 200, ['Content-Type' => 'image/jpeg']);
     }
-    Cache::set($cache_key, [
-      'code' => $captcha,
-      'time' => time(),
-    ], 5 * 60);
-    return json_success();
   }
 }
