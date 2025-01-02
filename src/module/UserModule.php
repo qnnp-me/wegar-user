@@ -68,11 +68,11 @@ class UserModule
     return json_decode(json_encode($user_info));
   }
 
-  static function getUserById(int $id): UserModel
+  static function getUserById(int $id): ?UserModel
   {
     $user = UserModel::where('id', $id);
     if (!$user->exists()) {
-      throw new BusinessException('用户不存在');
+      return null;
     }
     return $user
       ->with('identifiers')
@@ -80,11 +80,11 @@ class UserModule
       ->first();
   }
 
-  static function getUserByIdentifier(string $identifier): UserModel
+  static function getUserByIdentifier(string $identifier): ?UserModel
   {
     $user_identifier = UserIdentifierModel::where('identifier', $identifier)->first();
     if (!$user_identifier) {
-      throw new BusinessException('用户不存在');
+      return null;
     }
     return UserModel
       ::where('id', $user_identifier->user_id)
@@ -101,18 +101,26 @@ class UserModule
     return ss()->userGet();
   }
 
-  static function loginUserByIdentifier(string $identifier): void
+  static function loginUserByIdentifier(string $identifier): bool
   {
     $user = self::getUserByIdentifier($identifier);
+    if (!$user) {
+      return false;
+    }
     $user_info = self::toReadable($user);
     ss()->userSet($user_info);
+    return true;
   }
 
-  static function loginUserById(int $id): void
+  static function loginUserById(int $id): bool
   {
     $user = self::getUserById($id);
+    if (!$user) {
+      return false;
+    }
     $user_info = self::toReadable($user);
     ss()->userSet($user_info);
+    return true;
   }
 
   static function logoutUser(): void
@@ -120,10 +128,17 @@ class UserModule
     ss()->userSet(null);
   }
 
-  static function setMeta(string $name, mixed $value, int $user_id = null)
+  static function setMeta(string $name, mixed $value, int $user_id = null): bool
   {
     $user_id = $user_id ?? self::getCurrentUserId();
+    if (!$user_id) {
+      return false;
+    }
     $user = self::getUserById($user_id);
+    if (!$user) {
+      return false;
+    }
+    /** @var UserMetaModel $user_meta */
     $user_meta = $user->metas()->where('name', $name)->first();
     if ($user_meta) {
       $user_meta->value = $value;
@@ -144,6 +159,9 @@ class UserModule
   static function log(string $initiator, UserLogLevelEnum $level, string $message, array $context, int $user_id = null): void
   {
     $user_id = $user_id ?? self::getCurrentUserId();
+    if (!$user_id) {
+      return;
+    }
     try {
       $user_log = new UserLogModel();
       $user_log
@@ -171,9 +189,12 @@ class UserModule
     }
   }
 
-  static function getLogs(int $page = 1, int $pageSize = null, bool $items_only = true, int $user_id = null)
+  static function getLogs(int $page = 1, int $pageSize = null, bool $items_only = true, int $user_id = null): ?array
   {
     $user_id = $user_id ?? self::getCurrentUserId();
+    if (!$user_id) {
+      return null;
+    }
     $logs = UserLogModel::where('user_id', $user_id)
       ->with('context')
       ->orderBy('created_at', 'desc')
@@ -193,11 +214,11 @@ class UserModule
     ];
   }
 
-  private static function getCurrentUserId()
+  private static function getCurrentUserId(): ?int
   {
     $user_info = self::getCurrentUser();
     if (!$user_info) {
-      throw new BusinessException('用户未登录');
+      return null;
     }
     return $user_info->id;
   }
