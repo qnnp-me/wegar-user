@@ -9,6 +9,8 @@ use support\Cache;
 use support\exception\BusinessException;
 use support\Request;
 use support\Response;
+use Webman\Captcha\CaptchaBuilder;
+use Webman\Captcha\PhraseBuilder;
 use Webman\RateLimiter\Annotation\RateLimiter;
 use Wegar\User\model\enum\UserIdentifierTypeEnum;
 use Wegar\User\model\enum\UserLogLevelEnum;
@@ -24,7 +26,11 @@ class BasicController
     $user = UserModule::getUserByIdentifier($identifier);
     $userinfo = UserModule::toReadable($user);
     if ($password) {
-      if (!$user){
+      if (strtolower($code) !== session('captcha-login')) {
+        throw new BusinessException('验证码错误');
+      }
+      session()->delete('captcha-login');
+      if (!$user) {
         throw new BusinessException('用户不存在');
       }
       UserModule::log('system', UserLogLevelEnum::INFO, '用户登录', [
@@ -35,7 +41,7 @@ class BasicController
         throw new BusinessException('密码错误');
       }
     } elseif ($code) {
-      $captcha = Cache::get('captcha_' . $identifier, [
+      $captcha = Cache::get('captcha_' . preg_replace("#[^0-9a-zA-Z\-_.]#", "_", $identifier), [
         'code' => '',
         'time' => 0,
       ]);
@@ -106,20 +112,22 @@ class BasicController
     UserModule::log('system', UserLogLevelEnum::INFO, '用户登出', [
       'ip' => request()->getRealIp(false),
     ]);
-    UserModule::logoutUser();
-    return json_success();
+    return json_success(UserModule::logoutUser());
   }
 
-  function captcha(Request $request, string $phone = '', string $email = ''): Response
+  function captcha(Request $request, string $phone = '', string $email = '', $width = 150, $height = 40): Response
   {
-    if (time() - ss()->lastRequestTimeGet() < config('plugin.WegarUser.captcha.delay', 2)) {
+    if (
+      ($phone || $email) &&
+      (time() - ss()->lastRequestTimeGet() < config('plugin.WegarUser.captcha.delay', 2))
+    ) {
       throw new BusinessException('请求过于频繁，请稍后再试');
     }
     $len = config('plugin.WegarUser.captcha.length', 4);
     $min = pow(10, $len - 1);
     $max = pow(10, $len) - 1;
     $captcha = rand($min, $max);
-    $cache_key = 'captcha_' . ($phone ?: $email);
+    $cache_key = 'captcha_' . preg_replace("#[^0-9a-zA-Z\-_.]#", "_", $phone ?: $email ?: '');
     $last_data = Cache::get($cache_key, [
       'code' => '',
       'time' => 0,
@@ -136,7 +144,12 @@ class BasicController
         'code' => $captcha,
       ]);
     } else {
-      return json_error('参数错误');
+      $builder = new PhraseBuilder(4, 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ');
+      $captcha = new CaptchaBuilder(null, $builder);
+      $captcha->build(min($width, 450), min($height, 120));
+      $request->session()->set("captcha-login", strtolower($captcha->getPhrase()));
+      $img_content = $captcha->get();
+      return response($img_content, 200, ['Content-Type' => 'image/jpeg']);
     }
     Cache::set($cache_key, [
       'code' => $captcha,

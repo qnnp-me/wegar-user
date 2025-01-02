@@ -123,9 +123,14 @@ class UserModule
     return true;
   }
 
-  static function logoutUser(): void
+  static function logoutUser(): bool
   {
+    $userinfo = self::getCurrentUser();
+    if (!$userinfo) {
+      return false;
+    }
     ss()->userSet(null);
+    return true;
   }
 
   static function setMeta(string $name, mixed $value, int $user_id = null): bool
