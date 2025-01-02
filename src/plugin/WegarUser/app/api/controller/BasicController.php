@@ -115,7 +115,7 @@ class BasicController
     if (time() - ss()->lastRequestTimeGet() < config('plugin.WegarUser.captcha.delay', 2)) {
       throw new BusinessException('请求过于频繁，请稍后再试');
     }
-    $len = config('plugin.WegarUser.captcha.email_template', 4);
+    $len = config('plugin.WegarUser.captcha.length', 4);
     $min = pow(10, $len - 1);
     $max = pow(10, $len) - 1;
     $captcha = rand($min, $max);
