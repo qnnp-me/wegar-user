@@ -12,6 +12,7 @@ class UserMiddleware implements MiddlewareInterface
   public function process(Request $request, callable $handler): Response
   {
     $user = UserModule::getCurrentUser();
+    $request->user = $request->user ?? $user;
     /** @var Response $response */
     $response = $handler($request);
     $response->withHeader('X-User-Id', $user->id ?? 0);
