@@ -95,7 +95,7 @@ class BasicController
 
   function info(Request $request): Response
   {
-    $current_user = $request->user;
+    $current_user = UserModule::getCurrentUser();
     if (!$current_user) {
       throw new BusinessException('用户未登录');
     }
