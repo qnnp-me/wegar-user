@@ -14,8 +14,8 @@
     "wegar/basic": "^1.0",
     "workerman/webman-framework": "^1.6|^2.1",
     "webman/database": "^2.1",
-    "illuminate/pagination": "^11.44",
-    "illuminate/events": "^11.44",
+    "illuminate/pagination": "^11.0|^12.0",
+    "illuminate/events": "^11.0|^12.0",
     "symfony/var-dumper": "^7.2"
   },
   "autoload": {
