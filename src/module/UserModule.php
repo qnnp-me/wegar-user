@@ -133,7 +133,7 @@ class UserModule
     return true;
   }
 
-  static function setMeta(string $name, mixed $value, int $user_id = null): bool
+  static function setMeta(string $name, mixed $value, ?int $user_id = null): bool
   {
     $user_id = $user_id ?? self::getCurrentUserId();
     if (!$user_id) {
@@ -161,7 +161,7 @@ class UserModule
     }
   }
 
-  static function log(string $initiator, UserLogLevelEnum $level, string $message, array $context, int $user_id = null): void
+  static function log(string $initiator, UserLogLevelEnum $level, string $message, array $context, ?int $user_id = null): void
   {
     $user_id = $user_id ?? self::getCurrentUserId();
     if (!$user_id) {
@@ -194,7 +194,7 @@ class UserModule
     }
   }
 
-  static function getLogs(int $page = 1, int $pageSize = null, bool $items_only = true, int $user_id = null): ?array
+  static function getLogs(int $page = 1, ?int $pageSize = null, bool $items_only = true, ?int $user_id = null): ?array
   {
     $user_id = $user_id ?? self::getCurrentUserId();
     if (!$user_id) {
