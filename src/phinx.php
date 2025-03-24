@@ -8,7 +8,7 @@ return [
       ? runtime_path(implode(DIRECTORY_SEPARATOR, [
         'phinx',
         'wegar-user',
-        'database',
+        'vendor/wegar/user/src/database',
         'migrations'
       ]))
       : $basic_dir . DIRECTORY_SEPARATOR . "database/migrations",
@@ -16,7 +16,7 @@ return [
       ? runtime_path(implode(DIRECTORY_SEPARATOR, [
         'phinx',
         'wegar-user',
-        'database',
+        'vendor/wegar/user/src/database',
         'seeds'
       ]))
       : $basic_dir . DIRECTORY_SEPARATOR . "database/seeds",

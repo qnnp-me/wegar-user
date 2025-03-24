@@ -4,7 +4,6 @@ namespace Wegar\User\model;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use support\Model;
 
 /**
  * @property int $id

@@ -3,10 +3,9 @@
 namespace Wegar\User\model;
 
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use support\Model;
 
 /**
- * @property int $id
+ * @property int    $id
  * @property string $password
  * @property string $status
  * @property string $created_at

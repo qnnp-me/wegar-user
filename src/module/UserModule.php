@@ -98,7 +98,7 @@ class UserModule
    */
   static function getCurrentUser(): ?object
   {
-    return ss()->userGet();
+    return ss()->wegarUserGet();
   }
 
   static function loginUserByIdentifier(string $identifier): bool

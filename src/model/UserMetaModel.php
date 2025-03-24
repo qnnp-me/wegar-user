@@ -3,7 +3,6 @@
 namespace Wegar\User\model;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use support\Model;
 
 /**
  * @property int $id
